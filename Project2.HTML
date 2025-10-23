@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resume Builder</title>
+
+  <!-- Optional font (uses system fallback if not available) -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#071428;
+      --panel:#0b1220;
+      --accent:#06b6d4;
+      --muted:#94a3b8;
+      --white:#e6eef6;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial;color:var(--white);background:linear-gradient(180deg,#020617 0%,var(--bg) 100%)}
+
+    /* Centered start screen */
+    .start-screen{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .start-card{
+      text-align:center;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      padding:36px;
+      border-radius:14px;
+      box-shadow:0 10px 40px rgba(2,6,23,0.6);
+      max-width:720px;
+      width:100%;
+    }
+    .start-card h1{margin:0 0 8px;color:var(--accent);font-size:2rem}
+    .start-card p{margin:0 0 18px;color:var(--muted)}
+    .btn{
+      background:var(--accent);
+      border:none;
+      color:#001;
+      padding:12px 20px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn.ghost{background:transparent;color:var(--white);border:1px solid rgba(255,255,255,0.06)}
+
+    /* App container (hidden until start) */
+    .app-container{display:none;padding:22px;max-width:1200px;margin:24px auto;gap:18px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:46px;height:46;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700;color:#001}
+    .small{color:var(--muted);font-size:13px}
+
+    .layout{display:grid;grid-template-columns:380px 1fr;gap:18px}
+    @media (max-width:960px){ .layout{grid-template-columns:1fr} .panel{order:2} .preview{order:1} }
+
+    .panel{
+      background:var(--panel);
+      padding:16px;border-radius:12px;max-height:80vh;overflow:auto;
+    }
+    .panel label{display:block;margin-top:10px;color:var(--muted);font-size:13px}
+    .panel input, .panel textarea{width:100%;padding:8px;margin-top:6px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--white)}
+    .panel textarea{min-height:80px;resize:vertical}
+
+    .preview{
+      background:#fff;color:#0b1220;border-radius:10px;padding:22px;max-height:80vh;overflow:auto;
+    }
+    .r-header{display:flex;gap:18px;align-items:center}
+    .avatar{width:84px;height:84;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;color:#001;font-weight:700;font-size:28px}
+    .name{font-size:20px;font-weight:700}
+    .role{color:#40525a;margin-top:6px}
+    .contact{color:#52707a;margin-top:8px}
+
+    .skill-tag{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid rgba(11,17,32,0.06);margin-right:6px;margin-bottom:6px;font-size:13px;background:#f1f7f8}
+
+    .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .link{color:var(--accent);cursor:pointer;text-decoration:underline}
+
+    /* Back button */
+    .back-btn{background:transparent;border:1px solid rgba(0,0,0,0.06);padding:8px 10px;border-radius:8px;cursor:pointer}
+
+    /* Print stylesheet: only print the preview area, with margins */
+    @media print{
+      body{background:#fff;color:#000}
+      .start-screen, .topbar, .panel, .controls, .back-btn { display:none !important; }
+      .app-container{padding:0;margin:0}
+      .preview{box-shadow:none;border-radius:0;padding:16mm;max-height:none}
+      @page { margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- START SCREEN -->
+  <div class="start-screen" id="start-screen">
+    <div class="start-card" role="dialog" aria-labelledby="welcome-title">
+      <h1 id="welcome-title">Welcome to Cherry's Resume Builder</h1>
+      <p class="small">Create a clean resume fast — all client-side. Click Start to open the builder.</p>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:16px">
+        <button class="btn" id="start-btn">Start</button>
+        <button class="btn ghost" id="load-sample-start">Load Sample</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP (hidden until Start) -->
+  <div class="app-container" id="app-container" aria-hidden="true">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">RL</div>
+        <div>
+          <div style="font-weight:700">ResumeLab</div>
+          <div class="small">Client-side resume builder</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="back-btn" id="back-start">Back</button>
+        <div class="small">Tip: click <strong>Print</strong> to save PDF</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- LEFT PANEL -->
+      <div class="panel" id="left-panel">
+        <h3 style="margin:0">Enter Your Details</h3>
+        <div class="small" style="margin-top:6px">Fields auto-save to your browser.</div>
+
+        <label for="name">Full name</label>
+        <input id="name" type="text" placeholder="Your name">
+
+        <label for="title">Job title</label>
+        <input id="title" type="text" placeholder="Frontend Developer">
+
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com">
+
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" placeholder="+91 98xxxx">
+
+        <label for="summary">Summary</label>
+        <textarea id="summary" placeholder="Short professional summary..."></textarea>
+
+        <label for="skills">Skills (comma separated)</label>
+        <input id="skills" placeholder="HTML, CSS, JavaScript">
+
+        <div class="controls">
+          <button class="btn" id="print-btn">Print / Save PDF</button>
+          <button class="btn ghost" id="download-json">Download JSON</button>
+          <button class="btn ghost" id="load-sample">Load Sample</button>
+          <button class="btn ghost" id="reset-btn">Reset</button>
+        </div>
+      </div>
+
+      <!-- RIGHT PREVIEW -->
+      <div class="preview" id="preview">
+        <div class="r-header">
+          <div class="avatar" id="avatar">A</div>
+          <div>
+            <div class="name" id="p-name">Your Name</div>
+            <div class="role" id="p-title">Job Title</div>
+            <div class="contact small" id="p-contact">email@example.com • +91 98765 43210</div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <h4 style="margin:0 0 6px 0">Summary</h4>
+          <div id="p-summary" class="small">A short summary will appear here...</div>
+        </div>
+
+        <div style="margin-top:14px">
+          <h4 style="margin:0 0 6px 0">Skills</h4>
+          <div id="p-skills"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Elements
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('start-btn');
+  const loadSampleStart = document.getElementById('load-sample-start');
+
+  const app = document.getElementById('app-container');
+  const backStart = document.getElementById('back-start');
+
+  const nameIn = document.getElementById('name');
+  const titleIn = document.getElementById('title');
+  const emailIn = document.getElementById('email');
+  const phoneIn = document.getElementById('phone');
+  const summaryIn = document.getElementById('summary');
+  const skillsIn = document.getElementById('skills');
+
+  const pName = document.getElementById('p-name');
+  const pTitle = document.getElementById('p-title');
+  const pContact = document.getElementById('p-contact');
+  const pSummary = document.getElementById('p-summary');
+  const pSkills = document.getElementById('p-skills');
+  const avatar = document.getElementById('avatar');
+
+  const printBtn = document.getElementById('print-btn');
+  const downloadJsonBtn = document.getElementById('download-json');
+  const loadSampleBtn = document.getElementById('load-sample');
+  const resetBtn = document.getElementById('reset-btn');
+
+  // Utility: save/load to localStorage (safe try/catch)
+  function saveToLocal(data){
+    try{ localStorage.setItem('resumedata_v1', JSON.stringify(data)); } catch(e){}
+  }
+  function loadFromLocal(){
+    try{
+      const raw = localStorage.getItem('resumedata_v1');
+      if(!raw) return null;
+      return JSON.parse(raw);
+    } catch(e){ return null; }
+  }
+
+  // Collect current form state
+  function collectData(){
+    return {
+      name: nameIn.value || '',
+      title: titleIn.value || '',
+      email: emailIn.value || '',
+      phone: phoneIn.value || '',
+      summary: summaryIn.value || '',
+      skills: (skillsIn.value || '').split(',').map(s => s.trim()).filter(Boolean)
+    };
+  }
+
+  // Render preview from data object
+  function renderFromData(data){
+    pName.textContent = data.name || 'Your Name';
+    pTitle.textContent = data.title || 'Job Title';
+    pContact.textContent = ((data.email || 'email@example.com') + ' • ' + (data.phone || '+91 98765 43210')).replace(/^\s*•\s*/, '');
+    pSummary.textContent = data.summary || 'A short summary will appear here...';
+    // Avatar initials (max 2)
+    const initials = (data.name || '').trim().split(/\s+/).map(x => x[0]).filter(Boolean).slice(0,2).join('').toUpperCase() || 'A';
+    avatar.textContent = initials;
+
+    // Skills tags
+    pSkills.innerHTML = '';
+    (data.skills || []).forEach(s=>{
+      const el = document.createElement('span');
+      el.className = 'skill-tag';
+      el.textContent = s;
+      pSkills.appendChild(el);
+    });
+
+    // Auto-save
+    saveToLocal(data);
+  }
+
+  // Update preview from inputs (and save)
+  function updatePreview(){
+    const data = collectData();
+    renderFromData(data);
+  }
+
+  // Attach input listeners (auto-update)
+  [nameIn, titleIn, emailIn, phoneIn, summaryIn, skillsIn].forEach(el=>{
+    el.addEventListener('input', () => {
+      // small debounce for performance (simple)
+      if(el._deb) clearTimeout(el._deb);
+      el._deb = setTimeout(updatePreview, 120);
+    });
+  });
+
+  // Start app
+  startBtn.addEventListener('click', () => {
+    startScreen.style.display = 'none';
+    app.style.display = 'block';
+    app.setAttribute('aria-hidden', 'false');
+
+    // load any saved data or keep empty
+    const saved = loadFromLocal();
+    if(saved){
+      nameIn.value = saved.name || '';
+      titleIn.value = saved.title || '';
+      emailIn.value = saved.email || '';
+      phoneIn.value = saved.phone || '';
+      summaryIn.value = saved.summary || '';
+      skillsIn.value = (saved.skills || []).join(', ');
+      renderFromData(saved);
+    } else {
+      updatePreview();
+    }
+    // focus first input
+    nameIn.focus();
+  });
+
+  // Back to start
+  backStart.addEventListener('click', () => {
+    // simply go back to start screen (data remains in localStorage)
+    app.style.display = 'none';
+    startScreen.style.display = 'flex';
+    app.setAttribute('aria-hidden', 'true');
+    window.scrollTo(0,0);
+  });
+
+  // Print / Save PDF
+  printBtn.addEventListener('click', () => {
+    // ensure preview is up-to-date before print
+    updatePreview();
+    // give the browser a tiny moment to re-render
+    setTimeout(()=>window.print(), 150);
+  });
+
+  // Download JSON of current data
+  downloadJsonBtn.addEventListener('click', () => {
+    const data = collectData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    // safe filename (use name if available)
+    const safeName = (data.name || 'resume').replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_');
+    a.download = `resume_${safeName}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // Load sample
+  function loadSampleData(){
+    const sample = {
+      name: 'Arjun Reddy',
+      title: 'Full Stack Developer',
+      email: 'arjun.reddy@example.com',
+      phone: '+91 9xxxxxxxxx',
+      summary: 'Full stack developer with 3 years of experience building scalable web applications. Passionate about performance and clean UX.',
+      skills: ['JavaScript','React','Node.js','HTML','CSS','SQL']
+    };
+    // fill inputs and render
+    nameIn.value = sample.name;
+    titleIn.value = sample.title;
+    emailIn.value = sample.email;
+    phoneIn.value = sample.phone;
+    summaryIn.value = sample.summary;
+    skillsIn.value = sample.skills.join(', ');
+    updatePreview();
+  }
+
+  loadSampleStart.addEventListener('click', () => {
+    // start then load sample
+    startBtn.click();
+    setTimeout(loadSampleData, 60);
+  });
+  loadSampleBtn.addEventListener('click', loadSampleData);
+
+  // Reset (clears form and localStorage)
+  resetBtn.addEventListener('click', () => {
+    if(!confirm('Reset all fields and clear saved data?')) return;
+    localStorage.removeItem('resumedata_v1');
+    nameIn.value = titleIn.value = emailIn.value = phoneIn.value = summaryIn.value = skillsIn.value = '';
+    updatePreview();
+  });
+
+  // On load: if there's saved data, show Start screen with note (we don't auto-open)
+  (function init(){
+    const saved = loadFromLocal();
+    if(saved){
+      // optionally show a small note or pre-fill the start screen — skipping UI change to keep it minimal
+      // but pre-fill preview on open will use localStorage as coded in startBtn click handler
+    }
+  })();
+</script>
+</body>
+</html>
